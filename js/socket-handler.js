@@ -10,18 +10,29 @@ function setupSocketHandlers() {
         switch (data.type) {
             case 'lobby_list':
                 appState.myId = data.me;
-                // Confirm nickname was accepted by server
+
+                // If this is initial login (pendingNickname exists)
                 if (appState.pendingNickname) {
                     appState.nickname = appState.pendingNickname;
                     ui.myNickname.textContent = appState.nickname;
                     appState.pendingNickname = null;
                     updateLoginButton(false);
+                }
+
+                // Always render the lobby and ensure we're on lobby screen
+                renderLobby(data.players);
+
+                // If already connected and not in game, show lobby
+                if (appState.nickname && !appState.inGame) {
                     showScreen('lobby');
                 }
-                renderLobby(data.players);
                 break;
 
             case 'lobby_update':
+                // Re-render lobby with updated players
+                if (data.players) {
+                    renderLobby(data.players);
+                }
                 break;
 
             case 'game_start':
