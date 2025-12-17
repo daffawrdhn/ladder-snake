@@ -1,0 +1,12 @@
+{
+    "name": "laddersnake/game",
+    "description": "Multiplayer Ladder Snake Game using Ratchet",
+    "require": {
+        "cboden/ratchet": "^0.4.4"
+    },
+    "autoload": {
+        "psr-4": {
+            "LadderSnake\\": "src/"
+        }
+    }
+}
