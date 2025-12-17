@@ -1,5 +1,8 @@
 // Game Board and Gameplay Logic
 
+// Animation tracking - prevents roll until piece movement completes
+let isAnimating = false;
+
 // Simple dice update function
 function updateDiceDisplay(value) {
     ui.dice.textContent = value;
@@ -261,10 +264,19 @@ function updateTurn(pid) {
     const isMe = (pid === `Player_${appState.myId}`);
     ui.turnIndicator.textContent = isMe ? "Your Turn!" : `Waiting for ${name}...`;
     ui.turnIndicator.style.color = isMe ? "#4ade80" : "#94a3b8";
-    ui.rollBtn.disabled = !isMe;
+
+    // Disable roll button if animating or not my turn
+    ui.rollBtn.disabled = !isMe || isAnimating;
+
+    // Store pending turn to enable button after animation completes
+    appState.pendingTurn = pid;
 }
 
 function handleDiceRoll(data) {
+    // Start animation - block rolls until complete
+    isAnimating = true;
+    ui.rollBtn.disabled = true;
+
     const diceDisplay = ui.dice.parentElement;
     diceDisplay.classList.add('rolling');
     setTimeout(() => {
@@ -309,12 +321,26 @@ function handleDiceRoll(data) {
                         token.classList.remove('effect-snake');
                         token.classList.remove('effect-ladder');
                     }
+                    // Animation complete - allow next roll
+                    finishAnimation();
                 }, 800);
             }, 600);
         } else {
             updateTokenPosition(data.player, data.newPosition);
+            // Simple move complete - allow next roll after brief delay
+            setTimeout(() => finishAnimation(), 400);
         }
     }, 500);
+}
+
+// Called when piece animation completes
+function finishAnimation() {
+    isAnimating = false;
+    // Re-enable roll button if it's my turn
+    const isMyTurn = appState.pendingTurn === `Player_${appState.myId}`;
+    if (isMyTurn) {
+        ui.rollBtn.disabled = false;
+    }
 }
 
 function handleBoardUpdate(data) {
