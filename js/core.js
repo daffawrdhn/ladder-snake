@@ -32,9 +32,15 @@ function connectToServer(nickname) {
 
         // Dynamically detect environment for WebSocket URL
         const isLocalhost = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
-        const wsProtocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
-        const wsHost = isLocalhost ? 'localhost:8081' : `${window.location.hostname}:8081`;
-        const wsUrl = `${wsProtocol}//${wsHost}`;
+        let wsUrl;
+
+        if (isLocalhost) {
+            // Local development: connect directly to ws://localhost:8081
+            wsUrl = 'ws://localhost:8081';
+        } else {
+            // Production: use wss:// through Apache proxy (no port needed, uses 443)
+            wsUrl = 'wss://' + window.location.hostname + '/ws';
+        }
 
         socket = new WebSocket(wsUrl);
 
