@@ -293,7 +293,10 @@ function handleDiceRoll(data) {
 
         let intermediatePos = currentPos + moveDist;
 
+        // Handle overshoot (bounce back from 100)
+        let overshoot = false;
         if (intermediatePos > 100) {
+            overshoot = true;
             intermediatePos = 100 - (intermediatePos - 100);
         }
 
@@ -302,35 +305,86 @@ function handleDiceRoll(data) {
         const isSnake = appState.snakes[intermediatePos] !== undefined;
         const isLadder = appState.ladders[intermediatePos] !== undefined;
 
-        if (isSnake || isLadder) {
-            updateTokenPosition(data.player, intermediatePos);
-            setTimeout(() => {
-                const token = document.getElementById(`token-${data.player}`);
-                if (token) {
-                    if (isSnake) {
-                        token.classList.add('effect-snake');
-                        log(`🐍 ${name} hit a Snake! Down to ${data.newPosition}`, 'danger');
-                    } else {
-                        token.classList.add('effect-ladder');
-                        log(`🪜 ${name} climbed a Ladder! Up to ${data.newPosition}`, 'success');
-                    }
-                }
+        // Animate tile by tile, then handle snake/ladder
+        animateTileByTile(data.player, currentPos, intermediatePos, overshoot, () => {
+            if (isSnake || isLadder) {
                 setTimeout(() => {
-                    updateTokenPosition(data.player, data.newPosition);
+                    const token = document.getElementById(`token-${data.player}`);
                     if (token) {
-                        token.classList.remove('effect-snake');
-                        token.classList.remove('effect-ladder');
+                        if (isSnake) {
+                            token.classList.add('effect-snake');
+                            log(`🐍 ${name} hit a Snake! Down to ${data.newPosition}`, 'danger');
+                        } else {
+                            token.classList.add('effect-ladder');
+                            log(`🪜 ${name} climbed a Ladder! Up to ${data.newPosition}`, 'success');
+                        }
                     }
-                    // Animation complete - allow next roll
-                    finishAnimation();
-                }, 800);
-            }, 600);
-        } else {
-            updateTokenPosition(data.player, data.newPosition);
-            // Simple move complete - allow next roll after brief delay
-            setTimeout(() => finishAnimation(), 400);
-        }
+                    setTimeout(() => {
+                        updateTokenPosition(data.player, data.newPosition);
+                        if (token) {
+                            token.classList.remove('effect-snake');
+                            token.classList.remove('effect-ladder');
+                        }
+                        finishAnimation();
+                    }, 800);
+                }, 400);
+            } else {
+                finishAnimation();
+            }
+        });
     }, 500);
+}
+
+// Animate piece moving tile-by-tile
+function animateTileByTile(pid, fromPos, toPos, overshoot, callback) {
+    const STEP_DELAY = 150; // ms per tile
+
+    // Build the path of tiles to move through
+    let path = [];
+
+    if (overshoot) {
+        // If overshooting 100, go to 100 first, then bounce back
+        for (let i = fromPos + 1; i <= 100; i++) {
+            path.push(i);
+        }
+        // Then walk back
+        for (let i = 99; i >= toPos; i--) {
+            path.push(i);
+        }
+    } else if (toPos > fromPos) {
+        // Normal forward movement
+        for (let i = fromPos + 1; i <= toPos; i++) {
+            path.push(i);
+        }
+    } else {
+        // Moving backwards (rare, but handle it)
+        for (let i = fromPos - 1; i >= toPos; i--) {
+            path.push(i);
+        }
+    }
+
+    if (path.length === 0) {
+        callback();
+        return;
+    }
+
+    let stepIndex = 0;
+
+    function stepToNextTile() {
+        if (stepIndex >= path.length) {
+            callback();
+            return;
+        }
+
+        const nextPos = path[stepIndex];
+        updateTokenPosition(pid, nextPos);
+        stepIndex++;
+
+        setTimeout(stepToNextTile, STEP_DELAY);
+    }
+
+    // Start the animation
+    stepToNextTile();
 }
 
 // Called when piece animation completes
