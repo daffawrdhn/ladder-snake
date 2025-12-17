@@ -22,10 +22,10 @@ $server = new IoServer(
             $gameServer
         )
     ),
-    new React\Socket\Server("0.0.0.0:8080", $loop),
+    new React\Socket\Server("0.0.0.0:8081", $loop),
     $loop
 );
 
-echo "Server started on port 8080\n";
+echo "Server started on port 8081\n";
 $server->run();
 

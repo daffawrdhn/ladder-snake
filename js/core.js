@@ -30,7 +30,13 @@ function connectToServer(nickname) {
         appState.isConnecting = true;
         updateLoginButton(true);
 
-        socket = new WebSocket('ws://localhost:8080');
+        // Dynamically detect environment for WebSocket URL
+        const isLocalhost = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
+        const wsProtocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
+        const wsHost = isLocalhost ? 'localhost:8081' : `${window.location.hostname}:8081`;
+        const wsUrl = `${wsProtocol}//${wsHost}`;
+
+        socket = new WebSocket(wsUrl);
 
         socket.onopen = () => {
             console.log('Connected to server');
